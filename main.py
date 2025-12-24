@@ -1,173 +1,138 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import unicodedata
+[Role]
+너는 Streamlit 전문가야.
+한글 파일명(NFC/NFD) 인식 오류와 한글 폰트 깨짐을 완벽히 방지하며,
+Streamlit Cloud에서도 에러 없이 실행되는 코드를 작성한다.
+
+[Task]
+극지식물 최적 EC 농도 연구 대시보드 제작 
+📁 파일 구조:
+polar-plant-dashboard/ 
+├── main.py 
+├── data/ 
+│ ├── 송도고_환경데이터.csv 
+│ ├── 하늘고_환경데이터.csv 
+│ ├── 아라고_환경데이터.csv 
+│ ├── 동산고_환경데이터.csv 
+│ └── 4개교_생육결과데이터.xlsx (4개 시트: 동산고, 송도고, 아라고, 하늘고) 
+└── requirements.txt
+
+📊 데이터 정보:
+환경 데이터 (CSV 4개):
+●	컬럼: time, temperature, humidity, ph, ec
+●	학교별 측정 주기 다름.
+생육 결과 데이터 (XLSX 1개, 4개 시트):
+●	시트별 학교: 동산고(58개), 송도고(29개), 아라고(106개), 하늘고(45개)
+●	컬럼: 개체번호, 잎 수(장), 지상부 길이(mm), 지하부길이(mm), 생중량(g)
+●	✅ 학교별 비교 가능!
+학교별 EC 조건:
+●	송도고: EC 1.0
+●	하늘고: EC 2.0 (최적)
+●	아라고: EC 4.0
+●	동산고: EC 8.0
+핵심 분석:
+-학교별 환경 데이터 비교: 온도/습도/pH/EC의 평균값뿐만 아니라 **표준편차(변동성)**를 분석하여 환경 제어의 안정성 평가.
+-EC별 생육 결과 비교: 생중량, 잎 수, 길이 데이터를 통해 **최적 EC(하늘고: 2.0)**를 도출하고, 성장이 저해되기 시작하는 임계 EC 지점을 파악.
+-복합 요인 분석: EC 농도 외에 온도/습도 등 환경 변동성(안정성)이 생중량에 미치는 영향을 상관관계와 산점도를 통해 분석.
+-차기 실험 방향성 제안: 데이터 분석 결과를 바탕으로 환경 조정 및 실험 설계 보완 방향 제시.
+[Format]
+앱 구조:
+●	제목:  극지식물 최적 EC 농도 연구 및 차기 실험에서의 환경 조정 방향성 
+●	레이아웃: wide mode
+●	사이드바: 학교 선택 드롭다운 (전체, 송도고, 하늘고, 아라고, 동산고)
+
+3개 탭:
+•  Tab 1 "실험 개요 및 설계"
+•	연구 배경: 극지 식물 스마트팜 재배의 필요성 및 연구 목적 설명.
+•	실험 설계: 학교별 EC 처리 조건 테이블 (학교명, 목표 EC, 처리 성격[대조/최적/고농도], 개체수).
+•	주요 지표 카드: 총 분석 개체수, 데이터 기반 평균 온도/습도, 도출된 최적 EC.
+•  Tab 2 “ 환경 변동성 분석"
+•	환경 데이터 비교 (2x2): 평균 온도, 습도, pH 막대그래프 + 목표 대비 실측 EC 정밀도 비교.
+•	변동성 리포트: 학교별 환경 변동성(표준편차)을 비교하고, 이 변동성이 실험 결과에 미칠 수 있는 영향 기술.
+•	시계열 추이: 선택한 학교의 시계열 그래프(온도, 습도, EC)와 함께 차기 실험에서의 환경 조정 방향성(방향성 피드백) 섹션 추가.
+•	Expander: 데이터 테이블 및 CSV 다운로드.
+•  Tab 3 "생육 성과 및 임계점 분석"
+•	핵심 결과: EC 농도별 평균 생중량 비교 (최대값인 하늘고 강조).
+•	생육 지표 분석 (2x2): 생중량, 잎 수, 지상부 길이, 개체수 분포 막대그래프.
+•	임계점 및 영향력 분석: - 바이올린 플롯: 학교별 생중량 분포를 통해 성장이 급감하는 임계 EC 구간 시각화.
+o	상관관계 산점도: (1) 잎 수 vs 생중량, (2) 지상부 길이 vs 생중량.
+•	결론 섹션: EC 수치와 환경 안정성이 생중량에 끼친 영향력을 종합 요약.
+•	Expander: 생육 데이터 원본 및 XLSX 다운로드
+
+[Constraints]
+✅ 필수 1: 파일 인식 (매우 중요!)
+●	pathlib.Path.iterdir() 사용
+●	unicodedata.normalize("NFC"/"NFD") 양방향 비교
+●	파일명 f-string 조합 금지
+●	glob 패턴만 사용하는 방식 금지
+●	시트 이름 하드코딩 금지
+예시 코드:
+# 예시: 반드시 이런 구조 사용
 from pathlib import Path
+import unicodedata
+
+2. Plotly 서브플롯 (NameError 방지)
+반드시 import 포함
+from plotly.subplots import make_subplots
+3. XLSX 다운로드 (TypeError 방지)
+●	to_excel()은 반드시 BytesIO 사용
+●	파일 경로 없이 호출 ❌
 import io
-import time
 
-# -----------------------------------------------------------------------------
-# 0. 전역 설정 (모던한 컬러 팔레트로 수정)
-# -----------------------------------------------------------------------------
-SCHOOLS_CONFIG = {
-    "송도고": {"ec": 1.0, "color": "#94A3B8", "desc": "Control Group (저농도)"},
-    "하늘고": {"ec": 2.0, "color": "#10B981", "desc": "Optimal Zone (가설)"}, # 최적 강조색
-    "아라고": {"ec": 4.0, "color": "#0EA5E9", "desc": "High Concentration"},
-    "동산고": {"ec": 8.0, "color": "#6366F1", "desc": "Extreme Stress"}
-}
+buffer = io.BytesIO()
+df.to_excel(buffer, index=False, engine="openpyxl")
+buffer.seek(0)
 
-# -----------------------------------------------------------------------------
-# 1. 페이지 설정 및 UI 스타일 (고급스러운 다크 & 화이트 믹스)
-# -----------------------------------------------------------------------------
-st.set_page_config(page_title="극지식물 연구 대시보드", page_icon="🌿", layout="wide")
+st.download_button(
+    data=buffer,
+    file_name="파일명.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
 
+4. 한글 폰트 (깨짐 방지)
+Streamlit CSS
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
 html, body, [class*="css"] {
-    font-family: 'Pretendard', sans-serif;
+    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 }
-/* 메인 타이틀 스타일 */
-.main-title { 
-    font-size: 32px; font-weight: 700; color: #1E293B; 
-    padding-bottom: 20px; border-bottom: 2px solid #F1F5F9; margin-bottom: 30px;
-}
-/* 카드 스타일링 */
-[data-testid="stMetric"] {
-    background-color: #F8FAFC; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0;
-}
-/* 탭 폰트 */
-.stTabs [data-baseweb="tab-list"] button { font-size: 18px; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
+Plotly
+fig.update_layout(
+    font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+)
+5. 성능 & 안정성
+●	모든 데이터 로딩 함수에 @st.cache_data
+●	로딩 중 st.spinner()
+●	데이터 없을 경우 st.error()로 명확히 안내
 
-def get_font_dict():
-    return dict(family="Pretendard, sans-serif", size=13, color="#475569")
+❌ 금지 사항:
+●	“여기에 코드 추가” 같은 플레이스홀더
+●	파일명/시트명 하드코딩
+●	df.to_excel() 단독 호출
+●	import 누락된 상태의 make_subplots
 
-# -----------------------------------------------------------------------------
-# 2. 데이터 로딩 (NFC/NFD 대응)
-# -----------------------------------------------------------------------------
-@st.cache_data
-def load_all_data():
-    base_path = Path("data")
-    if not base_path.exists(): return None, None
 
-    def get_safe_path(keyword, ext):
-        target = unicodedata.normalize("NFC", keyword)
-        for p in base_path.iterdir():
-            if p.suffix == ext and target in unicodedata.normalize("NFC", p.name):
-                return p
-        return None
+✅ 기타:
+- @st.cache_data로 데이터 로딩 최적화
+- 에러 발생 시 st.error()로 명확히 안내
+- 로딩 중 st.spinner() 표시
+- EC별 생중량 비교 시 하늘고(EC 2.0) 최적값 강조
 
-    env_list, growth_list = [], []
 
-    for name in SCHOOLS_CONFIG.keys():
-        path = get_safe_path(f"{name}_환경데이터", ".csv")
-        if path:
-            df = pd.read_csv(path)
-            df.columns = [c.strip().lower() for c in df.columns]
-            if 'time' in df.columns: df['time'] = pd.to_datetime(df['time'], errors='coerce')
-            df['school'], df['target_ec'] = name, SCHOOLS_CONFIG[name]['ec']
-            env_list.append(df)
+[Output]
 
-    growth_path = get_safe_path("4개교_생육결과데이터", ".xlsx")
-    if growth_path:
-        xls = pd.ExcelFile(growth_path)
-        for sheet in xls.sheet_names:
-            sheet_nfc = unicodedata.normalize("NFC", sheet)
-            matched = next((s for s in SCHOOLS_CONFIG if s in sheet_nfc), None)
-            if matched:
-                df_s = pd.read_excel(xls, sheet_name=sheet)
-                df_s['school'], df_s['target_ec'] = matched, SCHOOLS_CONFIG[matched]['ec']
-                growth_list.append(df_s)
+1. main.py
+- 완성된 전체 코드
+- 복사-붙여넣기 후 즉시 실행 가능
+- 모든 그래프, 버튼, 다운로드 실제 작동
 
-    return pd.concat(env_list, ignore_index=True), pd.concat(growth_list, ignore_index=True)
+2. requirements.txt
+streamlit
+pandas
+plotly
+openpyxl
 
-# -----------------------------------------------------------------------------
-# 3. 애플리케이션 실행
-# -----------------------------------------------------------------------------
-def main():
-    st.markdown('<div class="main-title">🌿 극지식물 최적 양액 농도(EC) 연구</div>', unsafe_allow_html=True)
-    
-    env_df, growth_df = load_all_data()
-    if env_df is None or growth_df.empty:
-        st.error("데이터 로드 실패")
-        return
 
-    # 사이드바 (차분한 색상)
-    st.sidebar.markdown("### 🛠 분석 필터")
-    sel_school = st.sidebar.selectbox("학교별 상세 보기", ["전체"] + list(SCHOOLS_CONFIG.keys()))
-    
-    f_env = env_df if sel_school == "전체" else env_df[env_df['school'] == sel_school]
-    f_growth = growth_df if sel_school == "전체" else growth_df[growth_df['school'] == sel_school]
 
-    tab1, tab2, tab3 = st.tabs(["📖 연구 개요", "🌡️ 환경 분석", "📊 생육 성과"])
-
-    # --- Tab 1: 개요 (고급스러운 레이아웃) ---
-    with tab1:
-        c1, c2 = st.columns([1.3, 0.7])
-        with c1:
-            st.subheader("📌 연구 프로젝트 배경")
-            st.markdown("""
-            본 대시보드는 **극지 식물의 스마트 재배 시스템** 구축을 위해 수집된 데이터를 시각화합니다. 
-            식물의 대사 활동을 극대화하는 **최적의 EC(Electrical Conductivity)** 농도를 찾는 것이 본 연구의 핵심 과제입니다.
-            """)
-            
-            st.markdown("#### 🧪 주요 처리구 설계")
-            summary_cols = st.columns(4)
-            for i, (name, info) in enumerate(SCHOOLS_CONFIG.items()):
-                with summary_cols[i]:
-                    st.markdown(f"""
-                    <div style="background-color:{info['color']}22; border-left:5px solid {info['color']}; padding:10px; border-radius:5px;">
-                        <strong style="color:{info['color']}">{name}</strong><br>
-                        <small>EC {info['ec']} dS/m</small>
-                    </div>
-                    """, unsafe_allow_html=True)
-        with c2:
-            st.subheader("💡 Key Metrics")
-            st.metric("총 분석 샘플", f"{len(growth_df)} 개체")
-            st.metric("최적 후보군", "하늘고", "EC 2.0")
-
-    # --- Tab 2: 환경 (Plotly 컬러 테마 적용) ---
-    with tab2:
-        st.subheader("🌡️ 수집 환경 통계")
-        e_mean = env_df.groupby('school').mean(numeric_only=True).reset_index()
-        
-        # 차트 색상 리스트 생성
-        chart_colors = [SCHOOLS_CONFIG[s]['color'] for s in e_mean['school']]
-
-        fig_env = make_subplots(rows=1, cols=3, subplot_titles=("평균 온도", "평균 습도", "EC 정밀도"))
-        fig_env.add_trace(go.Bar(x=e_mean['school'], y=e_mean['temperature'], marker_color=chart_colors), 1, 1)
-        fig_env.add_trace(go.Bar(x=e_mean['school'], y=e_mean['humidity'], marker_color=chart_colors), 1, 2)
-        fig_env.add_trace(go.Scatter(x=e_mean['school'], y=e_mean['ec'], mode='markers+lines', line=dict(color='#334155')), 1, 3)
-        
-        fig_env.update_layout(height=400, font=get_font_dict(), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_env, use_container_width=True)
-
-    # --- Tab 3: 생육 (최적값 강조 차트) ---
-    with tab3:
-        st.subheader("📊 생육 데이터 분석")
-        
-        g_mean = growth_df.groupby('school').mean(numeric_only=True).reindex(SCHOOLS_CONFIG.keys()).reset_index()
-        chart_colors_g = [SCHOOLS_CONFIG[s]['color'] for s in g_mean['school']]
-
-        col_g1, col_g2 = st.columns(2)
-        with col_g1:
-            st.markdown("**1. 평균 생중량 (g) - 성장의 핵심 지표**")
-            fig_g1 = px.bar(g_mean, x='school', y='생중량(g)', color='school', color_discrete_map={k:v['color'] for k,v in SCHOOLS_CONFIG.items()})
-            fig_g1.update_layout(showlegend=False, font=get_font_dict(), margin=dict(t=10))
-            st.plotly_chart(fig_g1, use_container_width=True)
-            
-        with col_g2:
-            st.markdown("**2. 지상부 길이 대비 생중량 상관관계**")
-            fig_g2 = px.scatter(growth_df, x='지상부 길이(mm)', y='생중량(g)', color='school', trendline="ols",
-                               color_discrete_map={k:v['color'] for k,v in SCHOOLS_CONFIG.items()})
-            fig_g2.update_layout(font=get_font_dict(), margin=dict(t=10))
-            st.plotly_chart(fig_g2, use_container_width=True)
-
-        st.info("💡 **Tip:** 에메랄드 색상으로 표시된 **하늘고(EC 2.0)** 데이터가 전반적으로 우수한 생장 곡선을 보이고 있습니다.")
-
-if __name__ == "__main__":
-    main()
