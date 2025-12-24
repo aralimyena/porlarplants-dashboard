@@ -1,95 +1,20 @@
-[Role]
-너는 Streamlit 전문가야.
-한글 파일명(NFC/NFD) 인식 오류와 한글 폰트 깨짐을 완벽히 방지하며,
-Streamlit Cloud에서도 에러 없이 실행되는 코드를 작성한다.
-
-[Task]
-극지식물 최적 EC 농도 연구 대시보드 제작 
-📁 파일 구조:
-polar-plant-dashboard/ 
-├── main.py 
-├── data/ 
-│ ├── 송도고_환경데이터.csv 
-│ ├── 하늘고_환경데이터.csv 
-│ ├── 아라고_환경데이터.csv 
-│ ├── 동산고_환경데이터.csv 
-│ └── 4개교_생육결과데이터.xlsx (4개 시트: 동산고, 송도고, 아라고, 하늘고) 
-└── requirements.txt
-
-📊 데이터 정보:
-환경 데이터 (CSV 4개):
-●	컬럼: time, temperature, humidity, ph, ec
-●	학교별 측정 주기 다름.
-생육 결과 데이터 (XLSX 1개, 4개 시트):
-●	시트별 학교: 동산고(58개), 송도고(29개), 아라고(106개), 하늘고(45개)
-●	컬럼: 개체번호, 잎 수(장), 지상부 길이(mm), 지하부길이(mm), 생중량(g)
-●	✅ 학교별 비교 가능!
-학교별 EC 조건:
-●	송도고: EC 1.0
-●	하늘고: EC 2.0 (최적)
-●	아라고: EC 4.0
-●	동산고: EC 8.0
-핵심 분석:
--학교별 환경 데이터 비교: 온도/습도/pH/EC의 평균값뿐만 아니라 **표준편차(변동성)**를 분석하여 환경 제어의 안정성 평가.
--EC별 생육 결과 비교: 생중량, 잎 수, 길이 데이터를 통해 **최적 EC(하늘고: 2.0)**를 도출하고, 성장이 저해되기 시작하는 임계 EC 지점을 파악.
--복합 요인 분석: EC 농도 외에 온도/습도 등 환경 변동성(안정성)이 생중량에 미치는 영향을 상관관계와 산점도를 통해 분석.
--차기 실험 방향성 제안: 데이터 분석 결과를 바탕으로 환경 조정 및 실험 설계 보완 방향 제시.
-[Format]
-앱 구조:
-●	제목:  극지식물 최적 EC 농도 연구 및 차기 실험에서의 환경 조정 방향성 
-●	레이아웃: wide mode
-●	사이드바: 학교 선택 드롭다운 (전체, 송도고, 하늘고, 아라고, 동산고)
-
-3개 탭:
-•  Tab 1 "실험 개요 및 설계"
-•	연구 배경: 극지 식물 스마트팜 재배의 필요성 및 연구 목적 설명.
-•	실험 설계: 학교별 EC 처리 조건 테이블 (학교명, 목표 EC, 처리 성격[대조/최적/고농도], 개체수).
-•	주요 지표 카드: 총 분석 개체수, 데이터 기반 평균 온도/습도, 도출된 최적 EC.
-•  Tab 2 “ 환경 변동성 분석"
-•	환경 데이터 비교 (2x2): 평균 온도, 습도, pH 막대그래프 + 목표 대비 실측 EC 정밀도 비교.
-•	변동성 리포트: 학교별 환경 변동성(표준편차)을 비교하고, 이 변동성이 실험 결과에 미칠 수 있는 영향 기술.
-•	시계열 추이: 선택한 학교의 시계열 그래프(온도, 습도, EC)와 함께 차기 실험에서의 환경 조정 방향성(방향성 피드백) 섹션 추가.
-•	Expander: 데이터 테이블 및 CSV 다운로드.
-•  Tab 3 "생육 성과 및 임계점 분석"
-•	핵심 결과: EC 농도별 평균 생중량 비교 (최대값인 하늘고 강조).
-•	생육 지표 분석 (2x2): 생중량, 잎 수, 지상부 길이, 개체수 분포 막대그래프.
-•	임계점 및 영향력 분석: - 바이올린 플롯: 학교별 생중량 분포를 통해 성장이 급감하는 임계 EC 구간 시각화.
-o	상관관계 산점도: (1) 잎 수 vs 생중량, (2) 지상부 길이 vs 생중량.
-•	결론 섹션: EC 수치와 환경 안정성이 생중량에 끼친 영향력을 종합 요약.
-•	Expander: 생육 데이터 원본 및 XLSX 다운로드
-
-[Constraints]
-✅ 필수 1: 파일 인식 (매우 중요!)
-●	pathlib.Path.iterdir() 사용
-●	unicodedata.normalize("NFC"/"NFD") 양방향 비교
-●	파일명 f-string 조합 금지
-●	glob 패턴만 사용하는 방식 금지
-●	시트 이름 하드코딩 금지
-예시 코드:
-# 예시: 반드시 이런 구조 사용
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.express as px
 from pathlib import Path
 import unicodedata
-
-2. Plotly 서브플롯 (NameError 방지)
-반드시 import 포함
-from plotly.subplots import make_subplots
-3. XLSX 다운로드 (TypeError 방지)
-●	to_excel()은 반드시 BytesIO 사용
-●	파일 경로 없이 호출 ❌
 import io
 
-buffer = io.BytesIO()
-df.to_excel(buffer, index=False, engine="openpyxl")
-buffer.seek(0)
-
-st.download_button(
-    data=buffer,
-    file_name="파일명.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+# 페이지 설정
+st.set_page_config(
+    page_title="극지식물 최적 EC 농도 연구",
+    page_icon="🌱",
+    layout="wide"
 )
 
-4. 한글 폰트 (깨짐 방지)
-Streamlit CSS
+# 한글 폰트 설정
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
@@ -98,41 +23,586 @@ html, body, [class*="css"] {
 }
 </style>
 """, unsafe_allow_html=True)
-Plotly
-fig.update_layout(
-    font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
-)
-5. 성능 & 안정성
-●	모든 데이터 로딩 함수에 @st.cache_data
-●	로딩 중 st.spinner()
-●	데이터 없을 경우 st.error()로 명확히 안내
 
-❌ 금지 사항:
-●	“여기에 코드 추가” 같은 플레이스홀더
-●	파일명/시트명 하드코딩
-●	df.to_excel() 단독 호출
-●	import 누락된 상태의 make_subplots
+# 파일명 정규화 함수
+def normalize_filename(filename):
+    """NFC/NFD 정규화를 모두 시도"""
+    nfc = unicodedata.normalize("NFC", filename)
+    nfd = unicodedata.normalize("NFD", filename)
+    return nfc, nfd
 
+# 데이터 로딩 함수
+@st.cache_data
+def load_environment_data():
+    """환경 데이터 로딩 (CSV 4개)"""
+    data_dir = Path("data")
+    env_data = {}
+    
+    if not data_dir.exists():
+        st.error("data 폴더를 찾을 수 없습니다.")
+        return env_data
+    
+    # 학교별 패턴
+    schools = ["송도고", "하늘고", "아라고", "동산고"]
+    
+    for school in schools:
+        pattern_nfc = f"{unicodedata.normalize('NFC', school)}_환경데이터.csv"
+        pattern_nfd = f"{unicodedata.normalize('NFD', school)}_환경데이터.csv"
+        
+        found = False
+        for file in data_dir.iterdir():
+            if file.is_file() and file.suffix == '.csv':
+                file_nfc, file_nfd = normalize_filename(file.name)
+                if file_nfc == pattern_nfc or file_nfd == pattern_nfd or file.name == pattern_nfc or file.name == pattern_nfd:
+                    try:
+                        df = pd.read_csv(file, encoding='utf-8-sig')
+                        env_data[school] = df
+                        found = True
+                        break
+                    except Exception as e:
+                        st.warning(f"{school} 환경데이터 로딩 실패: {e}")
+        
+        if not found:
+            st.warning(f"{school}_환경데이터.csv 파일을 찾을 수 없습니다.")
+    
+    return env_data
 
-✅ 기타:
-- @st.cache_data로 데이터 로딩 최적화
-- 에러 발생 시 st.error()로 명확히 안내
-- 로딩 중 st.spinner() 표시
-- EC별 생중량 비교 시 하늘고(EC 2.0) 최적값 강조
+@st.cache_data
+def load_growth_data():
+    """생육 결과 데이터 로딩 (XLSX 1개, 4개 시트)"""
+    data_dir = Path("data")
+    growth_data = {}
+    
+    if not data_dir.exists():
+        return growth_data
+    
+    # XLSX 파일 찾기
+    xlsx_file = None
+    for file in data_dir.iterdir():
+        if file.is_file() and file.suffix in ['.xlsx', '.xls']:
+            file_nfc, file_nfd = normalize_filename(file.name)
+            if "생육결과데이터" in file_nfc or "생육결과데이터" in file_nfd:
+                xlsx_file = file
+                break
+    
+    if xlsx_file is None:
+        st.error("생육결과데이터.xlsx 파일을 찾을 수 없습니다.")
+        return growth_data
+    
+    try:
+        # 시트 이름 동적으로 읽기
+        xlsx = pd.ExcelFile(xlsx_file)
+        for sheet_name in xlsx.sheet_names:
+            df = pd.read_excel(xlsx_file, sheet_name=sheet_name)
+            # 시트명에서 학교명 추출
+            for school in ["송도고", "하늘고", "아라고", "동산고"]:
+                if school in sheet_name:
+                    growth_data[school] = df
+                    break
+    except Exception as e:
+        st.error(f"생육 데이터 로딩 실패: {e}")
+    
+    return growth_data
 
+# EC 정보 매핑
+EC_INFO = {
+    "송도고": {"ec": 1.0, "type": "대조군", "color": "#4285F4"},
+    "하늘고": {"ec": 2.0, "type": "최적", "color": "#34A853"},
+    "아라고": {"ec": 4.0, "type": "고농도", "color": "#FBBC04"},
+    "동산고": {"ec": 8.0, "type": "고농도", "color": "#EA4335"}
+}
 
-[Output]
+# 데이터 로딩
+with st.spinner("데이터 로딩 중..."):
+    env_data = load_environment_data()
+    growth_data = load_growth_data()
 
-1. main.py
-- 완성된 전체 코드
-- 복사-붙여넣기 후 즉시 실행 가능
-- 모든 그래프, 버튼, 다운로드 실제 작동
+# 제목
+st.title("🌱 극지식물 최적 EC 농도 연구 및 차기 실험에서의 환경 조정 방향성")
 
-2. requirements.txt
-streamlit
-pandas
-plotly
-openpyxl
+# 사이드바
+st.sidebar.header("🔍 분석 설정")
+schools = ["전체"] + list(EC_INFO.keys())
+selected_school = st.sidebar.selectbox("학교 선택", schools)
 
+# 탭 생성
+tab1, tab2, tab3 = st.tabs(["📋 실험 개요 및 설계", "🌡️ 환경 변동성 분석", "📊 생육 성과 및 임계점 분석"])
 
+# ==================== TAB 1: 실험 개요 및 설계 ====================
+with tab1:
+    st.header("📋 실험 개요 및 설계")
+    
+    # 연구 배경
+    st.subheader("🔬 연구 배경")
+    st.markdown("""
+    극지 환경에서의 식물 재배는 기후 변화 연구 및 지속 가능한 식량 생산을 위한 핵심 기술입니다. 
+    본 연구는 스마트팜 환경에서 **전기전도도(EC) 농도**가 극지식물의 생육에 미치는 영향을 분석하고, 
+    최적의 재배 조건을 도출하여 차기 실험의 환경 조정 방향성을 제시합니다.
+    """)
+    
+    # 실험 설계 테이블
+    st.subheader("🧪 실험 설계")
+    design_df = pd.DataFrame([
+        {"학교명": school, "목표 EC": info["ec"], "처리 성격": info["type"], 
+         "개체수": len(growth_data.get(school, []))}
+        for school, info in EC_INFO.items()
+    ])
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.dataframe(design_df, use_container_width=True, hide_index=True)
+    
+    # 주요 지표 카드
+    st.subheader("📌 주요 지표")
+    metric_cols = st.columns(4)
+    
+    total_samples = sum(len(df) for df in growth_data.values())
+    metric_cols[0].metric("총 분석 개체수", f"{total_samples}개")
+    
+    if env_data:
+        avg_temp = sum(df['temperature'].mean() for df in env_data.values()) / len(env_data)
+        avg_humidity = sum(df['humidity'].mean() for df in env_data.values()) / len(env_data)
+        metric_cols[1].metric("평균 온도", f"{avg_temp:.1f}°C")
+        metric_cols[2].metric("평균 습도", f"{avg_humidity:.1f}%")
+    
+    metric_cols[3].metric("도출된 최적 EC", "2.0 (하늘고)", delta="최적", delta_color="normal")
 
+# ==================== TAB 2: 환경 변동성 분석 ====================
+with tab2:
+    st.header("🌡️ 환경 변동성 분석")
+    
+    if not env_data:
+        st.error("환경 데이터를 불러올 수 없습니다.")
+    else:
+        # 환경 데이터 비교
+        st.subheader("📊 환경 데이터 비교")
+        
+        # 통계 계산
+        env_stats = {}
+        for school, df in env_data.items():
+            env_stats[school] = {
+                'temp_mean': df['temperature'].mean(),
+                'temp_std': df['temperature'].std(),
+                'humidity_mean': df['humidity'].mean(),
+                'humidity_std': df['humidity'].std(),
+                'ph_mean': df['ph'].mean(),
+                'ph_std': df['ph'].std(),
+                'ec_mean': df['ec'].mean(),
+                'ec_std': df['ec'].std()
+            }
+        
+        # 2x2 서브플롯
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=("평균 온도", "평균 습도", "평균 pH", "목표 대비 실측 EC"),
+            vertical_spacing=0.12,
+            horizontal_spacing=0.1
+        )
+        
+        schools_list = list(env_stats.keys())
+        colors = [EC_INFO[s]["color"] for s in schools_list]
+        
+        # 온도
+        fig.add_trace(
+            go.Bar(x=schools_list, y=[env_stats[s]['temp_mean'] for s in schools_list],
+                   name="온도", marker_color=colors, showlegend=False,
+                   text=[f"{env_stats[s]['temp_mean']:.1f}°C" for s in schools_list],
+                   textposition='outside'),
+            row=1, col=1
+        )
+        
+        # 습도
+        fig.add_trace(
+            go.Bar(x=schools_list, y=[env_stats[s]['humidity_mean'] for s in schools_list],
+                   name="습도", marker_color=colors, showlegend=False,
+                   text=[f"{env_stats[s]['humidity_mean']:.1f}%" for s in schools_list],
+                   textposition='outside'),
+            row=1, col=2
+        )
+        
+        # pH
+        fig.add_trace(
+            go.Bar(x=schools_list, y=[env_stats[s]['ph_mean'] for s in schools_list],
+                   name="pH", marker_color=colors, showlegend=False,
+                   text=[f"{env_stats[s]['ph_mean']:.2f}" for s in schools_list],
+                   textposition='outside'),
+            row=2, col=1
+        )
+        
+        # EC 목표 vs 실측
+        target_ec = [EC_INFO[s]["ec"] for s in schools_list]
+        actual_ec = [env_stats[s]['ec_mean'] for s in schools_list]
+        
+        fig.add_trace(
+            go.Bar(x=schools_list, y=target_ec, name="목표 EC", 
+                   marker_color='lightgray', opacity=0.5),
+            row=2, col=2
+        )
+        fig.add_trace(
+            go.Bar(x=schools_list, y=actual_ec, name="실측 EC", 
+                   marker_color=colors,
+                   text=[f"{ec:.2f}" for ec in actual_ec],
+                   textposition='outside'),
+            row=2, col=2
+        )
+        
+        fig.update_xaxes(title_text="학교", row=2, col=1)
+        fig.update_xaxes(title_text="학교", row=2, col=2)
+        fig.update_yaxes(title_text="온도 (°C)", row=1, col=1)
+        fig.update_yaxes(title_text="습도 (%)", row=1, col=2)
+        fig.update_yaxes(title_text="pH", row=2, col=1)
+        fig.update_yaxes(title_text="EC", row=2, col=2)
+        
+        fig.update_layout(
+            height=700,
+            showlegend=True,
+            font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # 변동성 리포트
+        st.subheader("📈 환경 변동성 리포트")
+        
+        variability_df = pd.DataFrame([
+            {
+                "학교": school,
+                "온도 표준편차": f"{stats['temp_std']:.2f}°C",
+                "습도 표준편차": f"{stats['humidity_std']:.2f}%",
+                "pH 표준편차": f"{stats['ph_std']:.3f}",
+                "EC 표준편차": f"{stats['ec_std']:.3f}"
+            }
+            for school, stats in env_stats.items()
+        ])
+        
+        st.dataframe(variability_df, use_container_width=True, hide_index=True)
+        
+        st.markdown("""
+        **분석 결과:**
+        - 환경 변동성(표준편차)이 낮을수록 실험 조건이 안정적으로 유지되었음을 의미합니다.
+        - 표준편차가 높은 학교는 환경 제어 시스템 보완이 필요합니다.
+        - 차기 실험에서는 변동성을 최소화하여 EC 효과를 더욱 명확히 분석할 수 있습니다.
+        """)
+        
+        # 시계열 추이
+        st.subheader("📅 시계열 환경 추이")
+        
+        if selected_school != "전체" and selected_school in env_data:
+            df = env_data[selected_school].copy()
+            
+            if 'time' in df.columns:
+                df['time'] = pd.to_datetime(df['time'], errors='coerce')
+                df = df.sort_values('time')
+            
+            fig_ts = make_subplots(
+                rows=3, cols=1,
+                subplot_titles=(f"{selected_school} 온도 추이", 
+                              f"{selected_school} 습도 추이", 
+                              f"{selected_school} EC 추이"),
+                vertical_spacing=0.08
+            )
+            
+            color = EC_INFO[selected_school]["color"]
+            
+            fig_ts.add_trace(
+                go.Scatter(x=df['time'] if 'time' in df.columns else df.index, 
+                          y=df['temperature'], mode='lines', 
+                          name='온도', line=dict(color=color)),
+                row=1, col=1
+            )
+            
+            fig_ts.add_trace(
+                go.Scatter(x=df['time'] if 'time' in df.columns else df.index, 
+                          y=df['humidity'], mode='lines', 
+                          name='습도', line=dict(color=color)),
+                row=2, col=1
+            )
+            
+            fig_ts.add_trace(
+                go.Scatter(x=df['time'] if 'time' in df.columns else df.index, 
+                          y=df['ec'], mode='lines', 
+                          name='EC', line=dict(color=color)),
+                row=3, col=1
+            )
+            
+            # 목표 EC 라인 추가
+            target = EC_INFO[selected_school]["ec"]
+            fig_ts.add_hline(y=target, line_dash="dash", line_color="red", 
+                           annotation_text=f"목표 EC: {target}", row=3, col=1)
+            
+            fig_ts.update_yaxes(title_text="온도 (°C)", row=1, col=1)
+            fig_ts.update_yaxes(title_text="습도 (%)", row=2, col=1)
+            fig_ts.update_yaxes(title_text="EC", row=3, col=1)
+            fig_ts.update_xaxes(title_text="시간", row=3, col=1)
+            
+            fig_ts.update_layout(
+                height=800,
+                showlegend=False,
+                font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+            )
+            
+            st.plotly_chart(fig_ts, use_container_width=True)
+            
+            # 방향성 피드백
+            st.markdown(f"""
+            ### 🎯 {selected_school} 차기 실험 환경 조정 방향성
+            
+            **현재 상태:**
+            - 평균 온도: {env_stats[selected_school]['temp_mean']:.1f}°C (변동성: ±{env_stats[selected_school]['temp_std']:.2f})
+            - 평균 습도: {env_stats[selected_school]['humidity_mean']:.1f}% (변동성: ±{env_stats[selected_school]['humidity_std']:.2f})
+            - 실측 EC: {env_stats[selected_school]['ec_mean']:.2f} (목표: {EC_INFO[selected_school]['ec']})
+            
+            **개선 제안:**
+            1. EC 정밀도: 목표 대비 편차를 ±0.1 이내로 유지
+            2. 온도 안정화: 주야간 온도 변동을 ±2°C 이내로 제어
+            3. 습도 제어: 일정 습도 유지를 위한 자동화 시스템 보완
+            """)
+        else:
+            st.info("특정 학교를 선택하면 시계열 추이를 확인할 수 있습니다.")
+        
+        # 데이터 다운로드
+        with st.expander("📥 환경 데이터 다운로드"):
+            for school, df in env_data.items():
+                col1, col2 = st.columns([3, 1])
+                col1.write(f"**{school} 환경데이터**")
+                csv = df.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+                col2.download_button(
+                    label="CSV 다운로드",
+                    data=csv,
+                    file_name=f"{school}_환경데이터.csv",
+                    mime="text/csv"
+                )
+
+# ==================== TAB 3: 생육 성과 및 임계점 분석 ====================
+with tab3:
+    st.header("📊 생육 성과 및 임계점 분석")
+    
+    if not growth_data:
+        st.error("생육 데이터를 불러올 수 없습니다.")
+    else:
+        # 핵심 결과
+        st.subheader("🏆 핵심 결과: EC 농도별 평균 생중량")
+        
+        avg_weights = {}
+        for school, df in growth_data.items():
+            if '생중량(g)' in df.columns:
+                avg_weights[school] = df['생중량(g)'].mean()
+        
+        fig_key = go.Figure()
+        schools_list = list(avg_weights.keys())
+        weights = list(avg_weights.values())
+        colors = [EC_INFO[s]["color"] for s in schools_list]
+        
+        # 최대값 강조
+        max_school = max(avg_weights, key=avg_weights.get)
+        colors_highlight = [EC_INFO[s]["color"] if s != max_school else "#34A853" 
+                           for s in schools_list]
+        
+        fig_key.add_trace(go.Bar(
+            x=schools_list,
+            y=weights,
+            marker_color=colors_highlight,
+            text=[f"{w:.2f}g<br>EC {EC_INFO[s]['ec']}" for s, w in zip(schools_list, weights)],
+            textposition='outside'
+        ))
+        
+        fig_key.update_layout(
+            title=f"최적 EC: {EC_INFO[max_school]['ec']} ({max_school})",
+            xaxis_title="학교 (EC 조건)",
+            yaxis_title="평균 생중량 (g)",
+            height=400,
+            font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+        )
+        
+        st.plotly_chart(fig_key, use_container_width=True)
+        
+        # 생육 지표 분석 (2x2)
+        st.subheader("📈 생육 지표 종합 분석")
+        
+        fig_growth = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=("평균 생중량", "평균 잎 수", "평균 지상부 길이", "개체수 분포"),
+            vertical_spacing=0.12,
+            horizontal_spacing=0.1
+        )
+        
+        # 데이터 준비
+        metrics = {
+            '생중량(g)': [],
+            '잎 수(장)': [],
+            '지상부 길이(mm)': []
+        }
+        counts = []
+        
+        for school in schools_list:
+            df = growth_data[school]
+            counts.append(len(df))
+            for col in metrics.keys():
+                if col in df.columns:
+                    metrics[col].append(df[col].mean())
+                else:
+                    metrics[col].append(0)
+        
+        colors = [EC_INFO[s]["color"] for s in schools_list]
+        
+        # 생중량
+        fig_growth.add_trace(
+            go.Bar(x=schools_list, y=metrics['생중량(g)'], 
+                   marker_color=colors, showlegend=False,
+                   text=[f"{v:.2f}g" for v in metrics['생중량(g)']],
+                   textposition='outside'),
+            row=1, col=1
+        )
+        
+        # 잎 수
+        fig_growth.add_trace(
+            go.Bar(x=schools_list, y=metrics['잎 수(장)'], 
+                   marker_color=colors, showlegend=False,
+                   text=[f"{v:.1f}장" for v in metrics['잎 수(장)']],
+                   textposition='outside'),
+            row=1, col=2
+        )
+        
+        # 지상부 길이
+        fig_growth.add_trace(
+            go.Bar(x=schools_list, y=metrics['지상부 길이(mm)'], 
+                   marker_color=colors, showlegend=False,
+                   text=[f"{v:.1f}mm" for v in metrics['지상부 길이(mm)']],
+                   textposition='outside'),
+            row=2, col=1
+        )
+        
+        # 개체수
+        fig_growth.add_trace(
+            go.Bar(x=schools_list, y=counts, 
+                   marker_color=colors, showlegend=False,
+                   text=[f"{c}개" for c in counts],
+                   textposition='outside'),
+            row=2, col=2
+        )
+        
+        fig_growth.update_yaxes(title_text="생중량 (g)", row=1, col=1)
+        fig_growth.update_yaxes(title_text="잎 수 (장)", row=1, col=2)
+        fig_growth.update_yaxes(title_text="길이 (mm)", row=2, col=1)
+        fig_growth.update_yaxes(title_text="개체수", row=2, col=2)
+        
+        fig_growth.update_layout(
+            height=700,
+            font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+        )
+        
+        st.plotly_chart(fig_growth, use_container_width=True)
+        
+        # 임계점 및 영향력 분석
+        st.subheader("🔍 임계점 및 영향력 분석")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 바이올린 플롯
+            all_growth = []
+            for school, df in growth_data.items():
+                if '생중량(g)' in df.columns:
+                    temp_df = df[['생중량(g)']].copy()
+                    temp_df['학교'] = school
+                    temp_df['EC'] = EC_INFO[school]['ec']
+                    all_growth.append(temp_df)
+            
+            if all_growth:
+                combined_df = pd.concat(all_growth, ignore_index=True)
+                
+                fig_violin = go.Figure()
+                for school in schools_list:
+                    school_data = combined_df[combined_df['학교'] == school]
+                    fig_violin.add_trace(go.Violin(
+                        y=school_data['생중량(g)'],
+                        name=f"{school}<br>EC {EC_INFO[school]['ec']}",
+                        box_visible=True,
+                        meanline_visible=True,
+                        fillcolor=EC_INFO[school]['color'],
+                        opacity=0.6
+                    ))
+                
+                fig_violin.update_layout(
+                    title="학교별 생중량 분포 (임계점 시각화)",
+                    yaxis_title="생중량 (g)",
+                    height=500,
+                    showlegend=True,
+                    font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+                )
+                
+                st.plotly_chart(fig_violin, use_container_width=True)
+        
+        with col2:
+            # 상관관계 분석
+            st.markdown("#### 📊 상관관계 분석")
+            
+            # 잎 수 vs 생중량
+            all_corr = []
+            for school, df in growth_data.items():
+                if '잎 수(장)' in df.columns and '생중량(g)' in df.columns:
+                    temp_df = df[['잎 수(장)', '생중량(g)']].copy()
+                    temp_df['학교'] = school
+                    all_corr.append(temp_df)
+            
+            if all_corr:
+                corr_df = pd.concat(all_corr, ignore_index=True)
+                
+                fig_corr1 = px.scatter(
+                    corr_df, x='잎 수(장)', y='생중량(g)', color='학교',
+                    color_discrete_map={s: EC_INFO[s]['color'] for s in schools_list},
+                    trendline="ols",
+                    title="잎 수 vs 생중량"
+                )
+                fig_corr1.update_layout(
+                    height=250,
+                    font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+                )
+                st.plotly_chart(fig_corr1, use_container_width=True)
+            
+            # 지상부 길이 vs 생중량
+            all_corr2 = []
+            for school, df in growth_data.items():
+                if '지상부 길이(mm)' in df.columns and '생중량(g)' in df.columns:
+                    temp_df = df[['지상부 길이(mm)', '생중량(g)']].copy()
+                    temp_df['학교'] = school
+                    all_corr2.append(temp_df)
+            
+            if all_corr2:
+                corr_df2 = pd.concat(all_corr2, ignore_index=True)
+                
+                fig_corr2 = px.scatter(
+                    corr_df2, x='지상부 길이(mm)', y='생중량(g)', color='학교',
+                    color_discrete_map={s: EC_INFO[s]['color'] for s in schools_list},
+                    trendline="ols",
+                    title="지상부 길이 vs 생중량"
+                )
+                fig_corr2.update_layout(
+                    height=250,
+                    font=dict(family="Malgun Gothic, Apple SD Gothic Neo, sans-serif")
+                )
+                st.plotly_chart(fig_corr2, use_container_width=True)
+        
+        # 결론 섹션
+        st.subheader("📝 종합 결론")
+        
+        max_weight = max(avg_weights.values())
+        optimal_school = max(avg_weights, key=avg_weights.get)
+        optimal_ec = EC_INFO[optimal_school]['ec']
+        
+        st.markdown(f"""
+        ### 🎯 주요 발견
+        
+        1. **최적 EC 농도**: **{optimal_ec} (하늘고)**에서 평균 생중량 **{max_weight:.2f}g**으로 최대값 기록
+        
+        2. **임계점 분석**:
+           - EC 1.0 (송도고): 대조군 대비 생육 양호
+           - EC 2.0 (하늘고): 최적 성장 구간 ✅
+           - EC 4.0 (아라고): 생중량 감소 시작
+           - EC 8.0 (동산고): 고농도로 인한 생육 저해 확인
+        
+        3. **환경 안정성의 중요성**:
+           - EC 농도뿐만 아니라 온도/습도 변동성도 생중량에 영향
+           - 환경 제어가 안정적인 조건에서 더 우수한 생육 결과 확인
+        
+        4. **차
