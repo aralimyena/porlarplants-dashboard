@@ -344,19 +344,27 @@ with tab2:
             st.plotly_chart(fig_ts, use_container_width=True)
             
             # 방향성 피드백
-            st.markdown(f"""
-            ### 🎯 {selected_school} 차기 실험 환경 조정 방향성
+            temp_mean = env_stats[selected_school]['temp_mean']
+            temp_std = env_stats[selected_school]['temp_std']
+            humidity_mean = env_stats[selected_school]['humidity_mean']
+            humidity_std = env_stats[selected_school]['humidity_std']
+            ec_mean = env_stats[selected_school]['ec_mean']
+            target_ec = EC_INFO[selected_school]['ec']
             
-            **현재 상태:**
-            - 평균 온도: {env_stats[selected_school]['temp_mean']:.1f}°C (변동성: ±{env_stats[selected_school]['temp_std']:.2f})
-            - 평균 습도: {env_stats[selected_school]['humidity_mean']:.1f}% (변동성: ±{env_stats[selected_school]['humidity_std']:.2f})
-            - 실측 EC: {env_stats[selected_school]['ec_mean']:.2f} (목표: {EC_INFO[selected_school]['ec']})
-            
-            **개선 제안:**
-            1. EC 정밀도: 목표 대비 편차를 ±0.1 이내로 유지
-            2. 온도 안정화: 주야간 온도 변동을 ±2°C 이내로 제어
-            3. 습도 제어: 일정 습도 유지를 위한 자동화 시스템 보완
-            """)
+            feedback_text = f"""
+### 🎯 {selected_school} 차기 실험 환경 조정 방향성
+
+**현재 상태:**
+- 평균 온도: {temp_mean:.1f}°C (변동성: ±{temp_std:.2f})
+- 평균 습도: {humidity_mean:.1f}% (변동성: ±{humidity_std:.2f})
+- 실측 EC: {ec_mean:.2f} (목표: {target_ec})
+
+**개선 제안:**
+1. EC 정밀도: 목표 대비 편차를 ±0.1 이내로 유지
+2. 온도 안정화: 주야간 온도 변동을 ±2°C 이내로 제어
+3. 습도 제어: 일정 습도 유지를 위한 자동화 시스템 보완
+"""
+            st.markdown(feedback_text)
         else:
             st.info("특정 학교를 선택하면 시계열 추이를 확인할 수 있습니다.")
         
@@ -590,20 +598,20 @@ with tab3:
         optimal_school = max(avg_weights, key=avg_weights.get)
         optimal_ec = EC_INFO[optimal_school]['ec']
         
-        st.markdown(f"""
-        ### 🎯 주요 발견
-        
-        1. **최적 EC 농도**: **{optimal_ec} (하늘고)**에서 평균 생중량 **{max_weight:.2f}g**으로 최대값 기록
-        
-        2. **임계점 분석**:
-           - EC 1.0 (송도고): 대조군 대비 생육 양호
-           - EC 2.0 (하늘고): 최적 성장 구간 ✅
-           - EC 4.0 (아라고): 생중량 감소 시작
-           - EC 8.0 (동산고): 고농도로 인한 생육 저해 확인
-        
-        3. **환경 안정성의 중요성**:
-           - EC 농도뿐만 아니라 온도/습도 변동성도 생중량에 영향
-           - 환경 제어가 안정적인 조건에서 더 우수한 생육 결과 확인
-        
-        4. **차
-    
+        conclusion_text = f"""
+### 🎯 주요 발견
+
+1. **최적 EC 농도**: **{optimal_ec} (하늘고)**에서 평균 생중량 **{max_weight:.2f}g**으로 최대값 기록
+
+2. **임계점 분석**:
+   - EC 1.0 (송도고): 대조군 대비 생육 양호
+   - EC 2.0 (하늘고): 최적 성장 구간 ✅
+   - EC 4.0 (아라고): 생중량 감소 시작
+   - EC 8.0 (동산고): 고농도로 인한 생육 저해 확인
+
+3. **환경 안정성의 중요성**:
+   - EC 농도뿐만 아니라 온도/습도 변동성도 생중량에 영향
+   - 환경 제어가 안정적인 조건에서 더 우수한 생육 결과 확인
+
+4. **차기 실험 권장사항**:
+   - EC 2.0을 중심으로 ±0.5 범위 내 세밀한 농도 구간 추가 실험
